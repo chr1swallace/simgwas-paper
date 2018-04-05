@@ -54,7 +54,7 @@ sum(freq$Probability)
 CV=sample(which(dfsnps$AFR > 0.2 & dfsnps$AFR < 0.8),args$NCV)
 #c(474) #sample(1:nrow(snps),2)
 ## g1 <- rep(2,args$NCV) #sample(c(1.2,1.5,1.8),args$NCV,replace=TRUE)
-g1 <- sample(c(1.2,1.5,1.8),args$NCV,replace=TRUE)
+g1 <- sample(c(1.1,1.2,1.3),args$NCV,replace=TRUE)
 FP <- make_GenoProbList(snps=dfsnps$rs,W=dfsnps$rs[CV],freq=freq)
 
 ## method 1 - simulate Z scores and adjust by expected variance to get beta

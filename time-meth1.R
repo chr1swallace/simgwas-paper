@@ -31,8 +31,16 @@ use <- apply(freq,2,var)>0
 freq <- freq[,use,drop=FALSE]
 dfsnps <- snps[use,,drop=FALSE]
 ## dfsnps$maf <- colMeans(freq-1)
-LD <- cor(freq)
-LD <- as.matrix(make.positive.definite(LD))
+cor2 <- function (x) {
+    1/(NROW(x) - 1) * crossprod( scale(x, TRUE, TRUE) )
+}
+LD <- cor2(freq)
+## LD2 <- cor2(freq)
+## all.equal(LD,LD2)
+## rbenchmark::benchmark(cor(freq) , cor2 (freq) , columns =c("test", "replications",
+##                                                            "elapsed", "relative"),
+##                       replications=10)
+LD <- as.matrix(corpcor::make.positive.definite(LD))
 freq$Probability <- 1/nrow(freq)
 FP <- make_GenoProbList(snps=dfsnps$rs,W=CV,freq=freq)
 

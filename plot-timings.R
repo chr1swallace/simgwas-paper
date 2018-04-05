@@ -20,22 +20,25 @@ x[,item:=as.numeric(sub(".*-","",name))]
 x <- x[,.(n=sum(!is.na(sec)),mean=mean(sec,na.rm=TRUE),sd=sd(sec,na.rm=TRUE)),by=c("method","item")]
 copy(x)
 }
+nicer <- function(p) {
+    nicecow(p) + geom_smooth(method="lm",linetype="dashed",se=FALSE) + theme(legend.position="none")
+}
 
 x <- reader(files[1])
-p <- ggplot(x,aes(x=item,y=mean,ymin=mean-sd,ymax=mean+sd,col=method,group=method)) + geom_pointrange() + geom_smooth(method="lm") + labs(x="Number of causal variants",y="Time (seconds)")
-nicecow(p)
-
+p1 <- ggplot(x,aes(x=item,y=mean,ymin=mean-sd,ymax=mean+sd,col=method,group=method)) + geom_pointrange() +  labs(x="Number of causal variants",y="Time (seconds)")
 
 x <- reader(files[2])
 x[,mean:=mean/60]
 x[,sd:=sd/60]
-p <- ggplot(x,aes(x=item,y=mean,ymin=mean-sd,ymax=mean+sd,col=method,group=method)) + geom_pointrange() + geom_smooth(method="lm") + scale_x_log10("Number of simulations (log scale)") + scale_y_log10("Time (minutes, log scale)")
-nicecow(p)
+p2 <- ggplot(x,aes(x=item,y=mean,ymin=mean-sd,ymax=mean+sd,col=method,group=method)) + geom_pointrange()  + scale_x_log10("Number of simulations (log scale)") + scale_y_log10("Time (minutes, log scale)")
 
 x <- reader(files[3])
 x[,mean:=mean/60]
 x[,sd:=sd/60]
-p <- ggplot(x,aes(x=item,y=mean,ymin=mean-sd,ymax=mean+sd,col=method,group=method)) + geom_pointrange() + geom_smooth(method="lm") + scale_x_log10("Sample size (log scale)") + scale_y_log10("Time (minutes, log scale)")
-nicecow(p)
+p3 <- ggplot(x,aes(x=item,y=mean,ymin=mean-sd,ymax=mean+sd,col=method,group=method)) + geom_pointrange() + scale_x_log10("Sample size (log scale)") + scale_y_log10("Time (minutes, log scale)")
 
-
+plot_grid(nicer(p1),
+          nicer(p2) + theme(legend.position=c(0,0.9)),
+          nicer(p3),
+          labels=c("a","b","c"),nrow=3)
+ggsave("timings.pdf",height=9,width=6)
