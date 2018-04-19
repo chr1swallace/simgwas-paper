@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 library(randomFunctions)
-args <- getArgs(defaults=list(NCSE=1000,NCTL=1000,NSIM=100,NCV=2),numeric=c("NCSE","NCTL","NSIM","NCV"))
+args <- getArgs(defaults=list(NCSE=1000,NCTL=1000,NSIM=10,NCV=2,SPECIAL=0),numeric=c("NCSE","NCTL","NSIM","NCV"))
 ## if(args$NCSE>1000)
 ##     args$NSIM <- 50
 
@@ -48,13 +48,36 @@ dfsnps <- snps[use,,drop=FALSE]
 dfsnps$maf <- colMeans(freq-1)
 LD <- cor(freq)
 LD <- as.matrix(make.positive.definite(LD))
-## XX <- new("SnpMatrix", as.matrix(freq))
+## XX <- new("SnpMatrix", as.matrix(freq))S""
 freq$Probability <- 1/nrow(freq)
 sum(freq$Probability)
-CV=sample(which(dfsnps$AFR > 0.2 & dfsnps$AFR < 0.8),args$NCV)
+
+if(args$SPECIAL=="0") {
+    CV=sample(which(dfsnps$AFR > 0.2 & dfsnps$AFR < 0.8),args$NCV)
 #c(474) #sample(1:nrow(snps),2)
 ## g1 <- rep(2,args$NCV) #sample(c(1.2,1.5,1.8),args$NCV,replace=TRUE)
-g1 <- sample(c(1.1,1.2,1.3),args$NCV,replace=TRUE)
+    g1 <- sample(c(1.1,1.2,1.3),args$NCV,replace=TRUE)
+} else {
+    CV <- switch(args$SPECIAL,
+                 "1"="rs367629917.9654916.T.C", # common snp, small effect
+                 "2"="rs376308868.9828660.G.C", # maf=0.02, larger effect
+                 "3"=c("rs77603406.9413839.C.T", "rs377252712.9827703.T.C", "rs75434219.9671019.T.C"), # 3 unlinked
+                 "4"= c("rs75112728.9830024.A.C", "X21.9680193.G.GA"), # 2 with r=-0.15
+                 "5"=c("rs71247672.9723463.A.G", "rs79178122.9724174.G.A"), # 2 with r=0.5, similar maf
+                 "6"=c("rs371462627.9695792.A.G", "X21.9695816.A.G"), # 2 with rs=0.8
+                 "7"="rs367629917.9654916.T.C", # common snp, big effect
+                 "8"=c("rs71247672.9723463.A.G", "rs79178122.9724174.G.A")) # 2 with r=0.5, similar maf
+   g1 <- switch(args$SPECIAL,
+                 "1"=1.1,
+                 "2"=1.5,
+                 "3"=c(1.3,1.2,1.1),
+                 "4"=c(1.2,1/1.2),
+                 "5"=c(1.2,1/1.2),
+                "6"=c(1.2,1/1.2),
+                "7"=2,
+                "8"=c(2,2))
+    CV <- match(CV,dfsnps$rs) # make numeric
+}
 FP <- make_GenoProbList(snps=dfsnps$rs,W=dfsnps$rs[CV],freq=freq)
 
 ## method 1 - simulate Z scores and adjust by expected variance to get beta
@@ -122,11 +145,11 @@ simbeta2 <- do.call("cbind",simbeta2)
 ## do the same for hapgen
 dtmp <- file.path(d,"tmp")
 ## dir.create(dtmp)
-gstr <- paste(sapply(1:args$NCV, function(i) { paste(dfsnps[CV[[i]],"position"], 1, g1[[i]], g1[[i]]^2) })  , collapse=" ")
+gstr <- paste(sapply(1:length(CV), function(i) { paste(dfsnps[CV[[i]],"position"], 1, g1[[i]], g1[[i]]^2) })  , collapse=" ")
 
 funhg <- function() {
-    tmp <- tempfile(tmpdir=dtmp)
-    tmp2 <- tempfile(tmpdir=dtmp)
+    tmp <- tempfile()#tmpdir=dtmp)
+    tmp2 <- tempfile()#tmpdir=dtmp)
     system(paste("/home/cew54/localc/bin/hapgen2",
                  "-m",file.path(dref,"genetic_map_chr21_combined_b37.txt"),
                  "-l",paste0(fhg,".leg"),
@@ -145,7 +168,7 @@ funhg <- function() {
     ret[,rsid:=make.names(rsid)]
     ret <- ret[rsid %in% colnames(freq),
                        .(rsid,frequentist_add_pvalue,frequentist_add_beta_1,frequentist_add_se_1)]
-    unlink(list.files(d,pattern=basename(tmp2),full=TRUE)) ## cleanup
+    unlink(list.files(dtmp,pattern=basename(tmp2),full=TRUE)) ## cleanup
     return(ret)
 }
 
@@ -184,8 +207,13 @@ hg <- data.table(snp=rep(results[[1]]$rsid,args$NSIM),sim=rep(1:args$NSIM,each=n
 results <- merge(meth1,hg,by=c("snp","sim"),all.x=TRUE)
 CV <- dfsnps$rs[CV]
 
-of <- tempfile(pattern=paste0("sim-c",args$NCSE,"-s",args$NSIM,"-"),tmpdir=d,fileext = ".RData")
+of <- if(args$SPECIAL=="0") {
+          tempfile(pattern=paste0("sim-c",args$NCSE,"-s",args$NSIM,"-"),tmpdir=d,fileext = ".RData")
+      } else {
+          tempfile(pattern=paste0("sim-c",args$NCSE,"-spec",args$SPECIAL,"-"),tmpdir=d,fileext = ".RData")
+      }
 ## of <- "~/simgwas-1kg.RData"
 save(results,CV,g1,args,file=of)
 
                      
+unlink(tempdir(), recursive=TRUE)
