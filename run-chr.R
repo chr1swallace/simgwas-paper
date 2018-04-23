@@ -55,7 +55,6 @@ gethap <- function(i) {
 cor2 <- function (x) {
     1/(NROW(x) - 1) * crossprod( scale(x, TRUE, TRUE) )
 }
-
 simv <- simz <- simbeta <- vector("list",nrow(ldd))
 for(i in 1:nrow(ldd)) {
 
@@ -73,23 +72,23 @@ for(i in 1:nrow(ldd)) {
     FP <- make_GenoProbList(snps=colnames(h),W=CV,freq=freq)
 
     ## method 1 - simulate Z scores and adjust by simulated variance to get beta
-    EZ <- est_statistic(N0=args$N, # number of controls
+    EZ <- simGWAS:::est_statistic(N0=args$N, # number of controls
                         N1=args$N, # number of cases
                         snps=colnames(h), # column names in freq of SNPs for which Z scores should be generated
                         W=CV, # causal variants, subset of snps
-                        gamma1=log(g1), # odds ratios
+                        gamma.W=log(g1), # odds ratios
                         freq=freq, # reference haplotypes
                         GenoProbList=FP) # FP above
-    simz[[i]] <- t(rmvnorm(n = args$NSIM, mean = EZ, sigma = LD))
-    tmpsimv <- sim_vbeta(N0=args$N, # number of controls
+    simz[[i]] <- rmvnorm(n = args$NSIM, mean = EZ, sigma = LD)
+    tmpsimv <- simulated_vbeta(N0=args$N, # number of controls
                          N1=args$N, # number of cases
                          snps=colnames(h), # column names in freq of SNPs for which Z scores should be generated
                          W=CV, # causal variants, subset of snps
-                         gamma1=log(g1), # odds ratios
+                         gamma.W=log(g1), # odds ratios
                          freq=freq, # reference haplotypes
                          GenoProbList=FP,
-                         nsim=args$NSIM)
-    simv[[i]] <- 1/do.call("cbind",tmpsimv)
+                         nrep=args$NSIM)
+    simv[[i]] <- 1/tmpsimv
     simbeta[[i]] <- simz[[i]] * sqrt(simv[[i]])
 }
 

@@ -85,7 +85,7 @@ EZ <- est_statistic(N0=args$NCTL, # number of controls
                     N1=args$NCSE, # number of cases
                     snps=dfsnps$rs, # column names in freq of SNPs for which Z scores should be generated
                     W=dfsnps$rs[CV], # causal variants, subset of snps
-                    gamma1=log(g1), # odds ratios
+                    gamma.CV=log(g1), # odds ratios
                     freq=freq, # reference haplotypes
                     GenoProbList=FP) # FP above
 ## ## cs <- col.summary(XX)
@@ -117,7 +117,7 @@ simv <- sim_vbeta(N0=args$NCTL, # number of controls
                 N1=args$NCSE, # number of cases
                 snps=dfsnps$rs, # column names in freq of SNPs for which Z scores should be generated
                 W=dfsnps$rs[CV], # causal variants, subset of snps
-                gamma1=log(g1), # odds ratios
+                gamma.CV=log(g1), # odds ratios
                 freq=freq, # reference haplotypes
                 GenoProbList=FP,
                 nsim=args$NSIM)
@@ -132,7 +132,7 @@ valt <- est_vbeta(N0=args$NCTL, # number of controls
                   N1=args$NCSE, # number of cases
                   snps=dfsnps$rs, # column names in freq of SNPs for which Z scores should be generated
                   W=dfsnps$rs[CV], # causal variants, subset of snps
-                  gamma1=log(g1), # odds ratios
+                  gamma.CV=log(g1), # odds ratios
                   freq=freq, # reference haplotypes
                   GenoProbList=FP) # FP above
 Ebeta <- EZ * valt

@@ -62,7 +62,7 @@ simv <- sim_vbeta(N0=args$N, # number of controls
                 GenoProbList=FP,
                 nsim=args$NSIM)
 simv <- 1/do.call("cbind",simv)
-simbeta <- simz* sqrt(simv)
+simbeta <- simz * sqrt(simv)
 
 
 ## ## method 2 - calculate an expected beta and simulate about that,
