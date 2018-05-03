@@ -1,26 +1,12 @@
 # simgwas-paper
-calculations run for our simGWAS (intended) paper
+calculations run for our simGWAS manuscript 
+
+> simGWAS: a fast method for simulation of large scale case-control GWAS summary statistics
+> Mary D Fortune, Chris Wallace
+> bioRxiv 313023; doi: https://doi.org/10.1101/313023
 
 Note that commands like `q.rb` and `qR.rb` are wrappers to run these commands on out local HPC.  This code is provided so that the details of what was done can be understood, but it is expected that commands to submit jobs to local HPCs would need to be customised.
 
-## prepare bcf files for UK10K samples
-```{sh}
-for i in 5 `seq 10 22`; do
-    echo $i
-    zcat _EGAZ00001017893_${i}.UK10K_COHORT.REL-2012-06-02.beagle.anno.csq.shapeit.20140306.legend.gz | sed "s/chr${i}[^ ]*  /chr${i}:/" | sed 's/ /_/g' | gzip -c > chr${i}.legend.gz
-    cp _EGAZ00001017893_${i}.UK10K_COHORT.REL-2012-06-02.beagle.anno.csq.shapeit.20140306.hap.gz chr${i}.hap.gz
-    cp _EGAZ00001017893_${i}.UK10K_COHORT.REL-2012-06-02.beagle.anno.csq.shapeit.20140306.sample chr${i}.samples
-    q.rb -r -c1 -t "02:00:00" "bcftools convert -o chr${i}.bcf.gz -Ob  --haplegendsample2vcf chr${i} && bcftools index chr${i}.bcf.gz"
-done
-
-rm chr${i}.hap.gz chr${i}.samples chr${i}.legend.gz
-
-```
-
-## precompute LD matrices for UK10K data
-```{sh}
-qR.rb -j ld -t "4:00:00" -r -y 1-22 -n chr ./uk10k-ld.R
-```
 
 ## Timings for comparison to HAPGEN2 + SNPTEST2
 
@@ -96,3 +82,32 @@ collate the results and plot
 ./summarise-1kg.R
 ```
 
+
+# Parts of what is needed to run on UK10K samples
+
+## prepare bcf files for UK10K samples
+The data were downloaded in the format of hap-legend-sample.  Indexed bcf files were created using the script below:
+
+```{sh}
+for i in 5 `seq 10 22`; do
+    echo $i
+    zcat _EGAZ00001017893_${i}.UK10K_COHORT.REL-2012-06-02.beagle.anno.csq.shapeit.20140306.legend.gz | sed "s/chr${i}[^ ]*  /chr${i}:/" | sed 's/ /_/g' | gzip -c > chr${i}.legend.gz
+    cp _EGAZ00001017893_${i}.UK10K_COHORT.REL-2012-06-02.beagle.anno.csq.shapeit.20140306.hap.gz chr${i}.hap.gz
+    cp _EGAZ00001017893_${i}.UK10K_COHORT.REL-2012-06-02.beagle.anno.csq.shapeit.20140306.sample chr${i}.samples
+    q.rb -r -c1 -t "02:00:00" "bcftools convert -o chr${i}.bcf.gz -Ob  --haplegendsample2vcf chr${i} && bcftools index chr${i}.bcf.gz"
+done
+
+rm chr${i}.hap.gz chr${i}.samples chr${i}.legend.gz
+
+```
+
+## precompute LD matrices for UK10K data
+```{sh}
+qR.rb -j ld -t "4:00:00" -r -y 1-22 -n chr ./uk10k-ld.R
+```
+
+## run a whole chromosome
+NB, not yet optimised to use the pre-calculated ld matrices yet
+```{sh}
+./run-chr.R
+```

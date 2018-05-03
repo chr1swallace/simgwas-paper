@@ -4,10 +4,11 @@ N=$1
 NEFF=$2
 NSIM=$3
 
-FG="/rds/user/cew54/hpc-work/simgwas/input"
+. $HOME/DIRS.txt
+FG="${SIMGWAS}/input"
 TMP1=$(mktemp /tmp/hg.XXXXXX)
 TMP2=$(mktemp /tmp/hg.XXXXXX)
-MAP="/home/cew54/share/Data/reference/1000GP_Phase3/genetic_map_chr21_combined_b37.txt"
+MAP="${REFDATA}/1000GP_Phase3/genetic_map_chr21_combined_b37.txt"
 
 case $NEFF in
     1)
@@ -31,10 +32,10 @@ case $NEFF in
 esac
 
 for i in `seq 1 $NSIM`; do
-    /home/cew54/localc/bin/hapgen2 \
+    ${BINDIR}/hapgen2 \
 	-m $MAP -l ${FG}.leg -h ${FG}.hap -o $TMP1 \
 	-dl $GSTR -n $N $N -no_haps_output
-    /home/cew54/localc/bin/snptest -data ${TMP1}.controls.gen ${TMP1}.controls.sample \
+    ${BINDIR}/snptest -data ${TMP1}.controls.gen ${TMP1}.controls.sample \
 				   ${TMP1}.cases.gen ${TMP1}.cases.sample \
 				   -o $TMP2 -frequentist 1 -method score -pheno pheno
 done

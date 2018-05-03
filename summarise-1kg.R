@@ -3,10 +3,11 @@ library(cowplot)
 library(magrittr)
 library(data.table)
 library(randomFunctions)
-d <- "/rds/user/cew54/hpc-work/simgwas"
+source("~/DIRS.txt") # sets SIMGWAS, REFDATA, BINDIR
+d <- SIMGWAS
 
 ## read in haplotypes
-dref <- "/home/cew54/share/Data/reference/1000GP_Phase3"
+dref <- file.path(REFDATA,"1000GP_Phase3")
 fhg <- file.path(d,"input")#tempfile(tmpdir=dtmp)
 h <- fread(paste0(fhg,".hap"))
 h <- as.matrix(h)
@@ -27,7 +28,6 @@ dfsnps <- snps[use,,drop=FALSE]
 dfsnps$maf <- colMeans(freq-1)
 LD <- cor(freq)
 LD <- as.matrix(make.positive.definite(LD))
-## XX <- new("SnpMatrix", as.matrix(freq))
 freq$Probability <- 1/nrow(freq)
 
 getproxy <- function(x,lower,upper) {
@@ -47,26 +47,6 @@ get0 <- function(x,upper) {
     setdiff(c(res,rep(NA,ncol(x)-length(res))),NA)
 }
 
-## cv <- results[snp %in% dfsnps[unlinked,]$rs,]
-## cv <- results[snp %in% CV[[1]],]
-## G1 <- g1[1]
-## with(cv,qqplot(z.hg,z1)); abline(0,1)
-## with(cv,qqplot(z.hg,z2)); abline(0,1)
-## with(cv,qqplot(beta.hg,beta1)); abline(0,1); abline(v=log(G1))
-## with(cv,mean(beta1-G1))
-## with(cv,hist(beta.hg)); abline(v=log(G1))
-## with(cv,qqplot(beta.hg,beta2)); abline(0,1)
-## with(cv,qqplot(beta1,be); abline(0,1)
-## with(cv,qqplot(z1,z2)); abline(0,1)
-
-## with(results,qqplot(beta.hg,beta1)); abline(0,1)
-## with(results,qqplot(beta.hg,beta2)); abline(0,1)
-## with(results,qqplot(z.hg,z1)); abline(0,1)
-## with(results,qqplot(z.hg,z2)); abline(0,1)
-
-## tmp <- results[!is.na(z.hg),ks.test(beta.hg,beta2),by="snp"]
-## with(cv,ks.test(z.hg,z2)$p.value)
-
 loadset <- function(f) {
     RESULTS <- vector("list",length(f))
     for(i in seq_along(f)) {
@@ -80,10 +60,10 @@ loadset <- function(f) {
 ## read in results
 ## big number of sims on a small set of CVs
 files <- list.files(d,pattern="spec",full=TRUE)
-# files <- list.files(d,pattern="s100",full=TRUE)
 ## split files by category
 fcat <- basename(files)  %>%  sub("-[0-9a-f]+.RData","",.)
 files <- split(files,fcat)
+## to keep results figures readable, only use 1:4,6
 files <- files[ grep("spec5|spec7|spec8",names(files),invert=TRUE) ]
 message("files found: ",length(unlist(files)))
 pb <- txtProgressBar(min=1,max=length(files),style=3)
@@ -110,12 +90,6 @@ for(i in seq_along(files)) { # i=33
                  "6"=c(1.2,1/1.2),
                  "7"=2,
                  "8"=c(2,2))
-##     if(length(CV)>1) {
-##         ld <- LD[CV,CV]
-##         diag(ld) <- 0
-##         print(max(abs(ld)))
-##     }
-## }
     results[,z1:=beta1/v]
     results[,z2:=beta2/v]
     results[,z.hg:=beta.hg/v.hg]

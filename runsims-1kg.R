@@ -1,14 +1,12 @@
 #!/usr/bin/env Rscript
 library(randomFunctions)
 args <- getArgs(defaults=list(NCSE=1000,NCTL=1000,NSIM=10,NCV=2,SPECIAL=0),numeric=c("NCSE","NCTL","NSIM","NCV"))
-## if(args$NCSE>1000)
-##     args$NSIM <- 50
+source("~/DIRS.txt")
 
-d <- "/rds/user/cew54/hpc-work/simgwas"
-##dir.create(d)
+d <- SIMGWAS
 
 ## FIRST 5000 snps in Africans only
-dref <- "/home/cew54/newscratch/Data/reference/1000GP_Phase3"
+dref <- file.path(REFDATA,"1000GP_Phase3")
 fhg <- file.path(d,"input")#tempfile(tmpdir=dtmp)
 ## crange <- paste0("7-",ncol(h)+6)
 ## system(paste("zcat",
@@ -88,31 +86,7 @@ EZ <- est_statistic(N0=args$NCTL, # number of controls
                     gamma.W=log(g1), # odds ratios
                     freq=freq, # reference haplotypes
                     GenoProbList=FP) # FP above
-## ## cs <- col.summary(XX)
-## ## LD <- snpStats::ld(XX, XX, stat = "R", symmetric = TRUE)
 simz <- rmvnorm(n = args$NSIM, mean = EZ, sigma = LD)
-## p <- 2*pnorm(abs(sim_z_score),lower.tail=FALSE)
-## Var.data.cc <- function(f, N, s) {
-##   1 / (2 * N * f * (1 - f) * s * (1 - s))
-## }
-## v <- Var.data.cc(dfsnps$maf,NCSE+NCTL,NCSE/(NCSE+NCTL))
-## beta <- sim_z_score * sqrt(v)
-
-## ## method 2 - calculate an expected beta and simulate about that,
-## ## using a variance-covariance matrix of V * LD
-## expbeta <- z * sqrt(v)
-## V <- sqrt(v) %*% t(sqrt(v))
-## simbeta <- t(rmvnorm(n=1000,mean=expbeta,sigma=V * LD))
-## simz <- simbeta/sqrt(v)
-
-## ## method 3 - method 1 but with alternate estimate of E(v(beta))
-## betaalt <- sim_z_score * valt
-
-## ## method 4 - method 2 but with alternate estimate of E(v(beta))
-## V <- valt %*% t(valt)
-## simbetaalt <- t(rmvnorm(n=1000,mean=expbetaalt,sigma=V * LD))
-
-## method 5 - method 1 but with randomly sampled v(beta)
 simv <- simulated_vbeta(N0=args$NCTL, # number of controls
                 N1=args$NCSE, # number of cases
                 snps=dfsnps$rs, # column names in freq of SNPs for which Z scores should be generated
@@ -136,12 +110,7 @@ valt <- expected_vbeta(N0=args$NCTL, # number of controls
                   freq=freq, # reference haplotypes
                   GenoProbList=FP) # FP above
 Ebeta <- EZ * valt
-## simbeta2 <- lapply(1:args$NSIM, function(i) {
-##     vv <- tcrossprod(sqrt(simv[,i]))
-##     t(rmvnorm(n=1,mean=Ebeta,sigma=vv * LD))
-## })
-## simbeta2 <- do.call("cbind",simbeta2)
-    
+
 ## do the same for hapgen
 dtmp <- file.path(d,"tmp")
 ## dir.create(dtmp)
@@ -150,7 +119,7 @@ gstr <- paste(sapply(1:length(CV), function(i) { paste(dfsnps[CV[[i]],"position"
 funhg <- function() {
     tmp <- tempfile()#tmpdir=dtmp)
     tmp2 <- tempfile()#tmpdir=dtmp)
-    system(paste("/home/cew54/localc/bin/hapgen2",
+    system(paste(file.path(BINDIR,"hapgen2"),
                  "-m",file.path(dref,"genetic_map_chr21_combined_b37.txt"),
                  "-l",paste0(fhg,".leg"),
                  "-h",paste0(fhg,".hap"),
@@ -158,7 +127,7 @@ funhg <- function() {
                  "-dl",gstr,
                  "-n",args$NCTL,args$NCSE,
                  "-no_haps_output"))
-    system(paste("/home/cew54/localc/bin/snptest -data ",
+    system(paste(file.path(BINDIR,"snptest")," -data ",
                  paste0(tmp,".controls.gen"),paste0(tmp,".controls.sample"),
                  paste0(tmp,".cases.gen"),paste0(tmp,".cases.sample"),
                  "-o",tmp2,

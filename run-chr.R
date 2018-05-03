@@ -4,48 +4,27 @@ library(randomFunctions)
 library(simGWAS)
 library(mvtnorm)
 library(corpcor)
-args <- getArgs(defaults=list(N=1000,NEFF=1,NSIM=100,
-                              file.ldd="/home/cew54/newscratch/Data/reference/lddetect/EUR/fourier_ls-chr22.bed",
-                              file.vcf="/home/cew54/newscratch/Data/reference/UK10K/chr22.bcf.gz"),
+source("~/DIRS.txt") # SIMGWAS, REFDATA, BINDIR locations
+args <- getArgs(defaults=list(N=1000,NEFF=1,NSIM=100,chr=22),
                 numeric=c("N","NEFF","NSIM"))
+file.ldd=file.path(REFDATA,paste0("lddetect/EUR/fourier_ls-chr",args$chr,".bed"))
+file.vcf=file.path(REFDATA,paste0("UK10K/chr",args$chr,".bcf.gz"))
                 
 
 g1 <- c(1.5, 1.8, 1.2, 1.8, 1.2, 1.5)[args$NEFF]
 
 ## working directory
-d <- "/rds/user/cew54/hpc-work/simgwas"
+d <- SIMGWAS
 
 ## ldblocks
-ldd <- fread(args$file.ldd)
+ldd <- fread(file.ldd)
 
 ## split bcf by ldblocks
 tmp <- tempfile()
 ldd[,blocknum:=1:.N]
-## ldd[,hapfile:=paste0(tmp,"_",blocknum,".hap.gz")]
-## ldd[,comm:=paste0("/home/cew54/localc/bin/bcftools view ",args$file.vcf," --min-af 0.01:minor --max-alleles 2 --min-alleles 2 -r chr",22,":",start,"-",stop," -Ou |/home/cew54/localc/bin/bcftools convert --haplegendsample ",tmp,"_",blocknum)]
-## system.time({
-##     system(ldd$comm[i])
-##     x=as.matrix(fread(paste("zcat",ldd$hapfile[i],"| sed 's/\\*//g'")))
-## })
-
-ldd[,comm:=paste0("/home/cew54/localc/bin/bcftools view ",args$file.vcf,
+ldd[,comm:=paste0(BINDIR,"/bcftools view ",file.vcf,
                   " --min-af 0.01:minor --max-alleles 2 --min-alleles 2 ",
                   " -r chr",22,":",start,"-",stop," -Ov ")] # -o ",tmp)]
-## system.time({
-##     y=fread(ldd$comm[i])
-##     yl <- y[,1:9]
-##     y <- as.matrix(y[,-c(1:9)])
-##     y1 <- matrix(as(substr(y,1,1),"numeric"),nrow(y))
-##     y2 <- matrix(as(substr(y,3,3),"numeric"),nrow(y))
-##     h <- cbind(y1,y2)
-## })
-
-## system.time({
-##     y=fread(ldd$comm[i])
-##     y <- as.matrix(y[,-c(1:9)])
-##     ha <- vcf2haps(y[,-c(1:9)])
-## })
-
 gethap <- function(i) {
     y=fread(ldd$comm[i])
     ha <- simGWAS:::vcf2haps(as.matrix(y[,-c(1:9)]))
@@ -64,9 +43,7 @@ for(i in 1:nrow(ldd)) {
     h <- h[,use,drop=FALSE]
     freq <- as.data.frame(h+1)
     freq$Probability <- 1/nrow(freq)
-    LD <- cor2(h)
-    ## system.time(LD1 <- corpcor::make.positive.definite(LD))
-    ## system.time(LD2 <- Matrix::nearPD(LD,corr=TRUE,ensureSymmetry=TRUE))
+    LD <- readRDS(file.path(d,"uk10k",paste0("ld-",args$chr,"-",i,".rds"))) #cor2(h)
     CV <- sample(colnames(h),1)
     
     FP <- make_GenoProbList(snps=colnames(h),W=CV,freq=freq)
