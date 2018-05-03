@@ -13,7 +13,7 @@ x <- fread(f,fill=TRUE,sep=" ",header=FALSE)
 setnames(x, c("id","name","state","total","user"))
 x[,min:=as.numeric(sub(":.*","",user))]
 x[,sec:=as.numeric(sub(".*:","",user)) + 60 * min]
-x[,method:=sub("-.*","",name)]
+x[,method:=sub("_.*","",name)]
 x[,method:=sub("hg","HAPGEN+SNPTEST",method)]
 x[,method:=sub("meth","simGWAS",method)]
 x[,item:=as.numeric(sub(".*-","",name))]
@@ -50,6 +50,6 @@ plot_grid(nicer(p1),
           nicer(p3),
           labels=c("a","b","c"),nrow=3)
 
-ggsave("timings.pdf",height=9,width=6)
+ggsave("timings.pdf",height=8,width=8)
 
 write.table(do.call("rbind",RESULTS),file="timings.tsv",row.names=FALSE,sep="\t",quote=FALSE)

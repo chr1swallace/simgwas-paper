@@ -9,7 +9,7 @@ g1 <- c(1.5, 1.8, 1.2, 1.8, 1.2, 1.5)[args$NEFF]
 d <- "/rds/user/cew54/hpc-work/simgwas"
 
 ## FIRST 5000 snps in Africans only
-dref <- "/home/cew54/newscratch/Data/reference/1000GP_Phase3"
+dref <- "/home/cew54/share/Data/reference/1000GP_Phase3"
 fhg <- file.path(d,"input")#tempfile(tmpdir=dtmp)
 
 ## read in haplotypes

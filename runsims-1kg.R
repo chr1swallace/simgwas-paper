@@ -85,12 +85,12 @@ EZ <- est_statistic(N0=args$NCTL, # number of controls
                     N1=args$NCSE, # number of cases
                     snps=dfsnps$rs, # column names in freq of SNPs for which Z scores should be generated
                     W=dfsnps$rs[CV], # causal variants, subset of snps
-                    gamma.CV=log(g1), # odds ratios
+                    gamma.W=log(g1), # odds ratios
                     freq=freq, # reference haplotypes
                     GenoProbList=FP) # FP above
 ## ## cs <- col.summary(XX)
 ## ## LD <- snpStats::ld(XX, XX, stat = "R", symmetric = TRUE)
-simz <- t(rmvnorm(n = args$NSIM, mean = EZ, sigma = LD))
+simz <- rmvnorm(n = args$NSIM, mean = EZ, sigma = LD)
 ## p <- 2*pnorm(abs(sim_z_score),lower.tail=FALSE)
 ## Var.data.cc <- function(f, N, s) {
 ##   1 / (2 * N * f * (1 - f) * s * (1 - s))
@@ -113,34 +113,34 @@ simz <- t(rmvnorm(n = args$NSIM, mean = EZ, sigma = LD))
 ## simbetaalt <- t(rmvnorm(n=1000,mean=expbetaalt,sigma=V * LD))
 
 ## method 5 - method 1 but with randomly sampled v(beta)
-simv <- sim_vbeta(N0=args$NCTL, # number of controls
+simv <- simulated_vbeta(N0=args$NCTL, # number of controls
                 N1=args$NCSE, # number of cases
                 snps=dfsnps$rs, # column names in freq of SNPs for which Z scores should be generated
                 W=dfsnps$rs[CV], # causal variants, subset of snps
-                gamma.CV=log(g1), # odds ratios
+                gamma.W=log(g1), # odds ratios
                 freq=freq, # reference haplotypes
                 GenoProbList=FP,
-                nsim=args$NSIM)
-simv <- 1/do.call("cbind",simv)
+                nrep=args$NSIM)
+simv <- 1/simv
 simbeta <- simz* sqrt(simv)
 ## head(dv <- data.frame(maf=pmin(dfsnps$maf,1-dfsnps$maf),oneoverv=1/v,v=v,valt=valt,vb1=VB[[1]],vb2=VB[[2]],hg1=hg.se[,1],hg2=hg.se[,2]))
 ## ggplot(dv,aes(x=sqrt(v),y=1/sqrt(vb1),col=maf)) + geom_point() + geom_smooth() + geom_abline()
     
 
 ## method 6 - method 2 but with randomly sampled v(beta)
-valt <- est_vbeta(N0=args$NCTL, # number of controls
+valt <- expected_vbeta(N0=args$NCTL, # number of controls
                   N1=args$NCSE, # number of cases
                   snps=dfsnps$rs, # column names in freq of SNPs for which Z scores should be generated
                   W=dfsnps$rs[CV], # causal variants, subset of snps
-                  gamma.CV=log(g1), # odds ratios
+                  gamma.W=log(g1), # odds ratios
                   freq=freq, # reference haplotypes
                   GenoProbList=FP) # FP above
 Ebeta <- EZ * valt
-simbeta2 <- lapply(1:args$NSIM, function(i) {
-    vv <- tcrossprod(sqrt(simv[,i]))
-    t(rmvnorm(n=1,mean=Ebeta,sigma=vv * LD))
-})
-simbeta2 <- do.call("cbind",simbeta2)
+## simbeta2 <- lapply(1:args$NSIM, function(i) {
+##     vv <- tcrossprod(sqrt(simv[,i]))
+##     t(rmvnorm(n=1,mean=Ebeta,sigma=vv * LD))
+## })
+## simbeta2 <- do.call("cbind",simbeta2)
     
 ## do the same for hapgen
 dtmp <- file.path(d,"tmp")
@@ -199,8 +199,9 @@ hg.se <- sapply(results,function(x) x$frequentist_add_se_1)
 ## qqplot(simbetab[CV[[1]],], hg.beta[CV[[1]],]); abline(0,1)
 ## qqplot(betab[CV[[1]],], simbetab[CV[[1]],]); abline(0,1)
 
-meth1 <- data.table(snp=rep(dfsnps$rs,args$NSIM),sim=rep(1:args$NSIM,each=nrow(dfsnps)),
-                    beta1=as.vector(simbeta),beta2=as.vector(simbeta2),v=as.vector(simv))
+meth1 <- data.table(snp=rep(dfsnps$rs,each=args$NSIM),sim=rep(1:args$NSIM,nrow(dfsnps)),
+                    beta1=as.vector(simbeta),#beta2=as.vector(simbeta2),
+                    v=as.vector(simv))
 hg <- data.table(snp=rep(results[[1]]$rsid,args$NSIM),sim=rep(1:args$NSIM,each=nrow(hg.beta)),
                  beta.hg=as.vector(hg.beta),
                  v.hg=as.vector(hg.se^2))

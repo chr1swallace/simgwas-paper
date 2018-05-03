@@ -6,7 +6,7 @@ library(randomFunctions)
 d <- "/rds/user/cew54/hpc-work/simgwas"
 
 ## read in haplotypes
-dref <- "/home/cew54/newscratch/Data/reference/1000GP_Phase3"
+dref <- "/home/cew54/share/Data/reference/1000GP_Phase3"
 fhg <- file.path(d,"input")#tempfile(tmpdir=dtmp)
 h <- fread(paste0(fhg,".hap"))
 h <- as.matrix(h)
@@ -84,7 +84,7 @@ files <- list.files(d,pattern="spec",full=TRUE)
 ## split files by category
 fcat <- basename(files)  %>%  sub("-[0-9a-f]+.RData","",.)
 files <- split(files,fcat)
-files <- files[ grep("spec7|spec8",names(files),invert=TRUE) ]
+files <- files[ grep("spec5|spec7|spec8",names(files),invert=TRUE) ]
 message("files found: ",length(unlist(files)))
 pb <- txtProgressBar(min=1,max=length(files),style=3)
 RESULTS <- vector("list",length(files))
@@ -146,227 +146,67 @@ for(i in seq_along(files)) { # i=33
 }
 
 results <- rbindlist(RESULTS)
+## relabel spec6 as spec5
+results[,cat:=sub("spec6","spec5",cat)]
 table(results$cat)
 results[,lab:=gsub("sim-c.*-spec|-causal|-unlinked|-proxy","",snplab)]
 results[,n:=gsub("sim-c|-spec.*","",cat)]
 table(paste(results$cat,results$lab),results$class)
+results[,lab:=sub("6-","5-",lab)]
 
 cols <- rgb(red=c(0,0,182,146,146,219)/256, green=c(146,109,109,0,73,209)/256, blue=c(146,219,255,0,0,0)/256,alpha=0.4)
 library(ggridges)
-nicer <- function(p) nicecow(p) + scale_fill_manual(values=c("1000"=cols[2],"5000"=cols[5]))
 
-tmp <- melt(results[class=="causal" & lab!="7-1" & lab!="8-1" & lab!="8-2",.(n,lab,z1,z.hg)],c("n","lab"))
-tmp[variable=="z1",variable:="simGWAS"]
-tmp[variable=="z.hg",variable:="HAPGEN"]
-setnames(tmp,"n","Sample.size")
-pz <- ggplot(tmp,aes(x=value,y=variable,fill=Sample.size)) + geom_density_ridges() + facet_wrap(~lab,scales="free_x",nrow=4) + geom_vline(xintercept=0,linetype="dashed") + xlab("Z score") + ylab("") +
-  theme(legend.position=c(0.75,0.1))
-nicer(pz)
-ggsave(nicer(pz),file="ridge-z.pdf",height=8,width=6)
-
-results[,beta.mn:=mean(beta.hg),by=c("lab","class")]
-tmp <- melt(results[class=="causal" & lab!="7-1" & lab!="8-1" & lab!="8-2",.(n,lab,beta1,beta.hg,beta.mn)],c("n","lab","beta.mn"))
-tmp[variable=="beta1",variable:="simGWAS"]
-tmp[variable=="beta.hg",variable:="HAPGEN"]
-setnames(tmp,"n","Sample.size")
-pz <- ggplot(tmp,aes(x=value,y=variable,fill=Sample.size)) + geom_density_ridges() + facet_wrap(~lab,scales="free_x",nrow=4) + geom_vline(aes(xintercept=beta.mn),linetype="dashed") + xlab("log odds ratio") + ylab("") +
-  theme(legend.position=c(0.75,0.1))
-ggsave(nicer(pz),file="ridge-beta.pdf",height=8,width=6)
-
-tmp <- melt(results[class!="causal" & lab!="7-1" & lab!="8-1" & lab!="8-2",.(n,lab,z1,z.hg)],c("n","lab"))
-tmp[variable=="z1",variable:="simGWAS"]
-tmp[variable=="z.hg",variable:="HAPGEN"]
-setnames(tmp,"n","Sample.size")
-pz <- ggplot(tmp,aes(x=value,y=variable,fill=Sample.size)) + geom_density_ridges() + facet_wrap(~lab,scales="free_x",nrow=4) + geom_vline(xintercept=0,linetype="dashed") + xlab("Z score") + ylab("") +
-  theme(legend.position="below")
-nicer(pz)
-ggsave(nicer(pz),file="ridge-z-unlinked.pdf",height=8,width=6)
-
-results[,beta.mn:=mean(beta.hg),by=c("lab","class")]
-tmp <- melt(results[class!="causal" & lab!="7-1" & lab!="8-1" & lab!="8-2",.(n,lab,beta1,beta.hg,beta.mn)],c("n","lab","beta.mn"))
-tmp[variable=="beta1",variable:="simGWAS"]
-tmp[variable=="beta.hg",variable:="HAPGEN"]
-setnames(tmp,"n","Sample.size")
-pz <- ggplot(tmp,aes(x=value,y=variable,fill=Sample.size)) + geom_density_ridges() + facet_wrap(~lab,scales="free_x",nrow=4) + geom_vline(aes(xintercept=beta.mn),linetype="dashed") + xlab("log odds ratio") + ylab("") +
-  theme(legend.position="below")
-ggsave(nicer(pz),file="ridge-beta-unlinked.pdf",height=8,width=6)
-
-
-
-## pz1 <- ggplot(results[grepl("c1000",cat) & class=="causal",],aes(x=z.hg,y=z1)) + geom_point() +
-##   facet_wrap(~lab,scales="free") + geom_abline() 
+nicer <- function(p) {
+    nicecow(p) +
+      scale_fill_manual(values=c("HG"=cols[5],"sG"=cols[2])) +
+      scale_x_continuous(breaks=scales:::extended_breaks(n=3)) +
+      theme(panel.spacing.x = unit(1, "lines"))
+}
 ## nicer(pz1)
 
-## pz5 <- ggplot(results[grepl("c5000",cat) & class=="causal",],aes(x=z.hg,y=z1)) + geom_point() +
-##   facet_wrap(~lab,scales="free") + geom_abline() 
-## nicecow(pz5)
 
-## pz <- ggplot(results[class=="causal",],aes(x=z.hg,y=z2,col=n)) + geom_point() +
-##   facet_wrap(~lab,scales="free") + geom_abline() 
-## nicer(pz)
+plotz <- function(results) {
+tmp <- melt(results[,.(n,lab,z1,z.hg)],c("n","lab"))
+tmp[variable=="z1",variable:="sG"]
+tmp[variable=="z.hg",variable:="HG"]
+setnames(tmp,"n","Sample.size")
+pz <- ggplot(tmp,aes(x=value,y=variable,fill=variable)) + geom_density_ridges() + facet_wrap(~lab,scales="free_x",nrow=3) + #geom_vline(xintercept=0,linetype="dashed") +
+  xlab("Z score") + ylab("") +
+  theme(legend.position="none")
+nicer(pz)
+## pz
+}
+plotb <- function(results) {
+    results[,beta.mn:=mean(beta.hg),by=c("lab","class")]
+    tmp <- melt(results[,.(n,lab,beta1,beta.hg,beta.mn)],c("n","lab","beta.mn"))
+    tmp[variable=="beta1",variable:="sG"]
+    tmp[variable=="beta.hg",variable:="HG"]
+    setnames(tmp,"n","Sample.size")
+    pb <- ggplot(tmp,aes(x=value,y=variable,fill=variable)) + geom_density_ridges() + facet_wrap(~lab,scales="free_x",nrow=3) + #geom_vline(aes(xintercept=beta.mn),linetype="dashed") +
+      xlab("log odds ratio") + ylab("") +
+  theme(legend.position="none")
+    nicer(pb)
+}
 
-## pz <- ggplot(results[class!="causal",],aes(x=z.hg,y=z1,col=n)) + geom_point() +
-##   facet_wrap(~lab,scales="free") + geom_abline() 
-## nicer(pz)
+## save(results,file="results.RData")
+## causal - main
 
+pz1 <- plotz(results[class=="causal" & n==1000,]) + ggtitle("a: Z score, n=1000")
+pz5 <- plotz(results[class=="causal" & n==5000,]) + ggtitle("b: Z score, n=5000")
+pb1 <- plotb(results[class=="causal" & n==1000,]) + ggtitle("c: log OR, n=1000")
+pb5 <- plotb(results[class=="causal" & n==5000,]) + ggtitle("d: log OR, n=5000")
 
-## pz <- ggplot(results[class!="causal",],aes(x=z.hg,y=z1,col=n)) + geom_point() +
-##   facet_wrap(~lab,scales="free") + geom_abline() 
-## nicer(pz)
+w <- 1.2
+pdf(file="ridge.pdf",height=11*w,width=9*w)
+plot_grid(pz1,pz5,pb1,pb5,nrow=2)
+dev.off()
 
+## unlinked - supp
+results[class!="causal",lab:=sub("-.*","",lab)]
+pz1 <- plotz(results[class!="causal" & n==1000,]) + ggtitle("a: Z score, n=1000")
+pz5 <- plotz(results[class!="causal" & n==5000,]) + ggtitle("b: Z score, n=5000")
+pb1 <- plotb(results[class!="causal" & n==1000,]) + ggtitle("c: log OR, n=1000")
+pb5 <- plotb(results[class!="causal" & n==5000,]) + ggtitle("d: log OR, n=5000")
 
-## pz5 <- ggplot(results[grep("c5000",cat),],aes(x=z.hg,y=z1,col=class)) + geom_point() +
-##   facet_wrap(~snplab,scales="free") + geom_abline() 
-## nicecow(pz5)
-
-## pb1 <- ggplot(results[grepl("c1000",cat) & class=="causal",],aes(x=beta.hg,y=beta1)) + geom_point() +
-##   facet_wrap(~snplab,scales="free") + geom_abline() + geom_vline(aes(xintercept=beta.marg)) +
-##   geom_hline(aes(yintercept=beta.marg))
-## nicecow(pb1)
-
-## pb <- ggplot(results[class=="causal",],aes(x=beta.hg,y=beta1,col=n)) + geom_point() +
-##   facet_wrap(~lab,scales="free") + geom_abline() + geom_vline(aes(xintercept=beta.marg)) +
-##   geom_hline(aes(yintercept=beta.marg))
-## nicecow(pb)
-
-## pb5 <- ggplot(results[grep("c5000",cat),],aes(x=beta.hg,y=beta1,col=class)) + geom_point() +
-##   facet_wrap(~snplab,scales="free") + geom_abline() + geom_vline(aes(xintercept=beta.marg)) +
-##   geom_hline(aes(yintercept=beta.marg))
-## nicecow(pb5)
-
-## ggsave(nicecow(pz1),file="z1000.pdf",height=6,width=6)
-## ggsave(nicecow(pb1),file="beta1000.pdf",height=6,width=6)
-## ggsave(nicecow(pz5),file="z5000.pdf",height=6,width=6)
-## ggsave(nicecow(pb5),file="beta5000.pdf",height=6,width=6)
-
-## ##     with(res,qqplot(beta1,beta2)); abline(0,1,col="red")
-## ##     with(res,qqplot(beta.hg,beta1)); abline(0,1,col="red")
-## ##     with(res,qqplot(z.hg,z1)); abline(0,1,col="red")
-## ##     ## res <- results[snp %in% CV,]
-## ##     with(res[snp==CV[[1]],], qqplot(z.hg,z1)); abline(0,1,col="red")
-## ##     #with(res[snp==CV[[1]],], qqplot(z.hg,z2)); abline(0,1,col="red")
-## ##     with(res[snp==CV[[1]],], qqplot(beta.hg,beta1)); abline(0,1,col="red")
-
-## ##     unlinked <- names(unlinked)
-## ##     res <- results[snp %in% unlinked,]
-## ##     with(res[snp==unlinked[[1]],], qqplot(z.hg,z1)); abline(0,1,col="red")
-## ##     #with(res[snp==unlinked[[1]],], qqplot(z.hg,z2)); abline(0,1,col="red")
-## ##     with(res[snp==unlinked[[1]],], qqplot(beta.hg,beta1)); abline(0,1,col="red")
-
-
-## ##     tmp <- melt(results[snp %in% c(CV,proxy,unlinked),.(snp,beta1,beta2,beta.hg)],"snp")
-## ##     tmp <- merge(tmp,tmp2,by="snp")
-
-## ##     ggplot(tmp,aes(x=value-beta.marg))+ geom_histogram() + facet_grid(variable ~ snp)
-    
-## ##     mn <- results[snp %in% asnps , lapply(.SD,mean,na.rm=TRUE),by="snp"]
-## ##     effects <- data.table(snp=asnps,beta.true=lg1,beta.marg=beta.marg,
-## ##                           class=c(rep("cv",length(CV)), rep("proxy",sum(!is.na(proxy))),
-## ##                                   rep("unlinked",sum(!is.na(unlinked)))))
-## ##     effects <- merge(effects,dfsnps[,.(rs,maf)],by.x="snp",by.y="rs")
-## ##     mn <- merge(mn,effects,by="snp")
-## ##     mn[,stat:="mean"]
-## ##     var <- results[snp %in% asnps, lapply(.SD,var),by="snp"]
-## ##     var <- merge(var,effects,by="snp")
-## ##     var[,stat:="var"]
-## ##     RESULTS[[i]] <- rbind(mn,var)
-## ##     RESULTS[[i]][,ncv:=length(CV)]
-## ##     RESULTS[[i]][,sim:=i]
-## ##     RESULTS[[i]][,ncse:=args$NCSE]
-## ## }
-## ## close(pb)
-
-
-
-## ## files <- list.files(d,pattern="RData",full=TRUE)
-
-## ## message("files found: ",length(files))
-## ## pb <- txtProgressBar(min=1,max=length(files),style=3)
-## ## RESULTS <- vector("list",length(files))
-## ## for(i in seq_along(files)) { # i=33
-## ##     setTxtProgressBar(pb, i)
-## ##     (load(files[[i]]))
-## ##     message(i, "\t",length(CV))
-## ## ##     if(length(CV)>1) {
-## ## ##         ld <- LD[CV,CV]
-## ## ##         print(ld)
-## ## ##     }
-## ## ## }
-## ##     head(results)
-## ##     results[,z1:=beta1/v]
-## ##     results[,z2:=beta2/v]
-## ##     results[,z.hg:=beta.hg/v.hg]
-## ##     results[,sim:=i]
-## ##     proxy <- getproxy(LD[,CV,drop=FALSE],sqrt(0.4), sqrt(0.8))
-## ##     unlinked <- get0(LD[,CV,drop=FALSE],0.1)
-## ##     ## asnps <- c(CV,setdiff(results$snp,CV)) #dfsnps[c(setdiff(proxy,NA),setdiff(unlinked,NA)),]$rs)
-## ##     asnps <- c(CV,dfsnps[c(setdiff(proxy,NA),setdiff(unlinked,NA)),]$rs)
-## ##     lg1 <- c(log(g1),rep(0,length(asnps)-length(g1)))
-## ##     if(length(asnps)>1) {
-## ##         ld <- LD[asnps,asnps]
-## ##         beta.marg <- ld %*% lg1
-## ##     } else {
-## ##         beta.marg <- lg1
-## ##     }
-## ##     mn <- results[snp %in% asnps , lapply(.SD,mean,na.rm=TRUE),by="snp"]
-## ##     effects <- data.table(snp=asnps,beta.true=lg1,beta.marg=beta.marg,
-## ##                           class=c(rep("cv",length(CV)), rep("proxy",sum(!is.na(proxy))),
-## ##                                   rep("unlinked",sum(!is.na(unlinked)))))
-## ##     effects <- merge(effects,dfsnps[,.(rs,maf)],by.x="snp",by.y="rs")
-## ##     mn <- merge(mn,effects,by="snp")
-## ##     mn[,stat:="mean"]
-## ##     var <- results[snp %in% asnps, lapply(.SD,var),by="snp"]
-## ##     var <- merge(var,effects,by="snp")
-## ##     var[,stat:="var"]
-## ##     RESULTS[[i]] <- rbind(mn,var)
-## ##     RESULTS[[i]][,ncv:=length(CV)]
-## ##     RESULTS[[i]][,sim:=i]
-## ##     RESULTS[[i]][,ncse:=args$NCSE]
-## ## }
-## ## close(pb)
-
-## ## data <- rbindlist(RESULTS)
-## ## head(data)
-## ## summary(data)
-## ## setnames(data,"beta.marg.V1","beta.marg")
-
-## ## mn <- data[stat=="mean",]
-## ## mn <- melt(mn[!is.na(beta.hg),.(sim,ncse,beta.true,beta.marg,ncv,class,beta1,beta2,beta.hg)],c("sim","ncse","beta.true","beta.marg","ncv","class"))
-
-## ## THR <- 0
-## ## message("about given values")
-## ## tmp <- mn[(beta.true-beta.marg)>=THR,
-## ##           .(mn.beta=mean(value - beta.true,na.rm=TRUE),
-## ##              var.beta=var(value-beta.true,na.rm=TRUE),
-## ##              n=sum(!is.na(value))),by=c("variable","ncv","ncse","class")]
-## ## ## head(tmp)
-## ## tmp[order(class,ncv,ncse,variable),]
-
-## ## message("about marg values")
-## ## tmp <- mn[(beta.true-beta.marg)>=THR,
-## ##           .(mn.beta=mean(value - beta.marg,na.rm=TRUE),
-## ##             var.beta=var(value-beta.marg,na.rm=TRUE),
-## ##             n=sum(!is.na(value))),by=c("variable","ncv","ncse","class")]
-## ## ## head(tmp)
-## ## tmp[order(class,ncv,ncse,variable),]
-
-## ## message("VAR about marg values")
-## ## v <- data[stat=="var" & !is.na(v.hg),.(ncv,ncse,v,v.hg)]
-## ## v[,lapply(.SD,mean,na.rm=TRUE),by=c("ncv","ncse")]
-## ## v[,lapply(.SD,median,na.rm=TRUE),by=c("ncv","ncse")]
-
-## ## mn <- data[stat=="mean",]
-## ## mn <- melt(mn[!is.na(beta.hg) & abs(beta.marg -beta.true)<0.05,
-## ##               .(sim,ncse,beta.marg,ncv,beta1,beta2,beta.hg)],c("sim","ncse","beta.marg","ncv"))
-
-## ## library(ggplot2)
-## ## ggplot(mn,aes(x=value - beta.marg)) + geom_histogram() + facet_wrap(variable~ncv) + geom_vline(xintercept=0,col="red",linetype="dashed")
-## ## mn[,.N,by=c("variable","ncv")]
-
-## ## with(data[stat=="mean" & !is.na(beta.hg),],qqplot(beta1,beta.hg)); abline(0,1)
-## ## with(data[stat=="mean" & !is.na(beta.hg),],qqplot(beta2,beta.hg)); abline(0,1)
-## ## with(data[stat=="mean" & !is.na(beta.hg),],qqplot(z2,z.hg)); abline(0,1)
-
-## ## with(mn[ncv==3 & variable=="beta.hg",], {
-## ##     qqnorm(value - beta.marg)
-## ##     qqline(value - beta.marg) })
+ggsave(plot_grid(pz1,pz5,pb1,pb5,nrow=2),file="ridge-unlinked.pdf",height=11,width=9)

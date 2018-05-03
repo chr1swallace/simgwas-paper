@@ -7,7 +7,7 @@ NSIM=$3
 FG="/rds/user/cew54/hpc-work/simgwas/input"
 TMP1=$(mktemp /tmp/hg.XXXXXX)
 TMP2=$(mktemp /tmp/hg.XXXXXX)
-MAP="/home/cew54/newscratch/Data/reference/1000GP_Phase3/genetic_map_chr21_combined_b37.txt"
+MAP="/home/cew54/share/Data/reference/1000GP_Phase3/genetic_map_chr21_combined_b37.txt"
 
 case $NEFF in
     1)
