@@ -56,24 +56,7 @@ if(args$SPECIAL=="0") {
 ## g1 <- rep(2,args$NCV) #sample(c(1.2,1.5,1.8),args$NCV,replace=TRUE)
     g1 <- sample(c(1.1,1.2,1.3),args$NCV,replace=TRUE)
 } else {
-    CV <- switch(args$SPECIAL,
-                 "1"="rs367629917.9654916.T.C", # common snp, small effect
-                 "2"="rs376308868.9828660.G.C", # maf=0.02, larger effect
-                 "3"=c("rs77603406.9413839.C.T", "rs377252712.9827703.T.C", "rs75434219.9671019.T.C"), # 3 unlinked
-                 "4"= c("rs75112728.9830024.A.C", "X21.9680193.G.GA"), # 2 with r=-0.15
-                 "5"=c("rs71247672.9723463.A.G", "rs79178122.9724174.G.A"), # 2 with r=0.5, similar maf
-                 "6"=c("rs371462627.9695792.A.G", "X21.9695816.A.G"), # 2 with rs=0.8
-                 "7"="rs367629917.9654916.T.C", # common snp, big effect
-                 "8"=c("rs71247672.9723463.A.G", "rs79178122.9724174.G.A")) # 2 with r=0.5, similar maf
-   g1 <- switch(args$SPECIAL,
-                 "1"=1.1,
-                 "2"=1.5,
-                 "3"=c(1.3,1.2,1.1),
-                 "4"=c(1.2,1/1.2),
-                 "5"=c(1.2,1/1.2),
-                "6"=c(1.2,1/1.2),
-                "7"=2,
-                "8"=c(2,2))
+    source("~/Projects/simgwas/getspec.R") # defines CV and g1 according to args$SPECIAL
     CV <- match(CV,dfsnps$rs) # make numeric
 }
 FP <- make_GenoProbList(snps=dfsnps$rs,W=dfsnps$rs[CV],freq=freq)
@@ -95,21 +78,21 @@ simv <- simulated_vbeta(N0=args$NCTL, # number of controls
                 freq=freq, # reference haplotypes
                 GenoProbList=FP,
                 nrep=args$NSIM)
-simv <- 1/simv
+## simv <- 1/simv
 simbeta <- simz* sqrt(simv)
 ## head(dv <- data.frame(maf=pmin(dfsnps$maf,1-dfsnps$maf),oneoverv=1/v,v=v,valt=valt,vb1=VB[[1]],vb2=VB[[2]],hg1=hg.se[,1],hg2=hg.se[,2]))
 ## ggplot(dv,aes(x=sqrt(v),y=1/sqrt(vb1),col=maf)) + geom_point() + geom_smooth() + geom_abline()
     
 
-## method 6 - method 2 but with randomly sampled v(beta)
-valt <- expected_vbeta(N0=args$NCTL, # number of controls
-                  N1=args$NCSE, # number of cases
-                  snps=dfsnps$rs, # column names in freq of SNPs for which Z scores should be generated
-                  W=dfsnps$rs[CV], # causal variants, subset of snps
-                  gamma.W=log(g1), # odds ratios
-                  freq=freq, # reference haplotypes
-                  GenoProbList=FP) # FP above
-Ebeta <- EZ * valt
+## ## method 6 - method 2 but with randomly sampled v(beta)
+## valt <- expected_vbeta(N0=args$NCTL, # number of controls
+##                   N1=args$NCSE, # number of cases
+##                   snps=dfsnps$rs, # column names in freq of SNPs for which Z scores should be generated
+##                   W=dfsnps$rs[CV], # causal variants, subset of snps
+##                   gamma.W=log(g1), # odds ratios
+##                   freq=freq, # reference haplotypes
+##                   GenoProbList=FP) # FP above
+## Ebeta <- EZ * valt
 
 ## do the same for hapgen
 dtmp <- file.path(d,"tmp")

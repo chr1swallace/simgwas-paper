@@ -70,11 +70,17 @@ sacct --name $jobs --format=JobID,JobName%50,State,TotalCPU,UserCPU | grep _sim 
 ## Simulations to check accuracy
 
 ```{sh}
-for i in `seq 1 6`; do
+for i in `seq 1 5`; do
     qR.rb -y 0-19 -c 1 -r -t "1:00:00" runsims-1kg.R --args SPECIAL=$i NSIM=50 NCSE=1000 NCTL=1000
     qR.rb -y 0-99 -c 1 -r -t "1:00:00" runsims-1kg.R --args SPECIAL=$i NSIM=10 NCSE=5000 NCTL=5000
 done
 ```
+
+### forward sims to check at CVs
+for i in `seq 1 5`; do
+    qR.rb -c 1 -r -t "1:00:00" forwardsims-1kg.R --args SPECIAL=$i NSIM=1000 NCSE=1000 NCTL=1000
+    qR.rb -c 1 -r -t "1:00:00" forwardsims-1kg.R --args SPECIAL=$i NSIM=1000 NCSE=5000 NCTL=5000
+done
 
 collate the results and plot
 
@@ -104,6 +110,14 @@ rm chr${i}.hap.gz chr${i}.samples chr${i}.legend.gz
 ## precompute LD matrices for UK10K data
 ```{sh}
 qR.rb -j ld -t "4:00:00" -r -y 1-22 -n chr ./uk10k-ld.R
+```
+
+## precompute standard error matrices for UK10K data
+
+These two steps should have been combined into one.  But weren't, and no point to rewrite now.
+```{sh}
+qR.rb -j ld -t "4:00:00" -r -y 1-22 -n chr ./uk10k-ld.R
+qR.rb -j ld -t "4:00:00" -r -y 1-22 -n chr ./uk10k-se.R
 ```
 
 ## run a whole chromosome

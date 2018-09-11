@@ -62,6 +62,6 @@ simv <- sim_vbeta(N0=args$N, # number of controls
                 freq=freq, # reference haplotypes
                 GenoProbList=FP,
                 nsim=args$NSIM)
-simv <- 1/do.call("cbind",simv)
+## simv <- do.call("cbind",simv)
 simbeta <- simz * sqrt(simv)
 

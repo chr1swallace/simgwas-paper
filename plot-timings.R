@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-files <- list.files("timings",full=TRUE)
+files <- list.files("~/Projects/simgwas/timings",full=TRUE)
 files
 library(data.table)
 library(ggplot2)
@@ -24,32 +24,37 @@ copy(x)
 x <- reader(files[1])
 x$item.what="n.causal.vars"
 RESULTS[[1]] <- x
-p1 <- ggplot(x,aes(x=item,y=mean,ymin=mean-sd,ymax=mean+sd,col=method,group=method)) + geom_pointrange() +  labs(x="Number of causal variants",y="Time (seconds)")
+p1 <- ggplot(x,aes(x=item,y=mean,ymin=mean-sd,ymax=mean+sd,pch=method,col=method,group=method,linetype=method)) + geom_pointrange() +  labs(x="Number of causal variants",y="Time (seconds)")
 
 x <- reader(files[2])
 x$item.what="n.replications"
 RESULTS[[2]] <- x
 x[,mean:=mean/60]
 x[,sd:=sd/60]
-p2 <- ggplot(x,aes(x=item,y=mean,ymin=mean-sd,ymax=mean+sd,col=method,group=method)) + geom_pointrange()  + scale_x_log10("Number of replications (log scale)",breaks=c(1,4,16,64,128)) + scale_y_log10("Time (minutes, log scale)")
+p2 <- ggplot(x,aes(x=item,y=mean,ymin=mean-sd,ymax=mean+sd,pch=method,col=method,group=method,linetype=method)) + geom_pointrange()  + scale_x_log10("Number of replications (log scale)",breaks=c(1,4,16,64,128)) + scale_y_log10("Time (minutes, log scale)")
 
 x <- reader(files[3])
 x$item.what="n.cases.controls"
 RESULTS[[3]] <- x
 x[,mean:=mean/60]
 x[,sd:=sd/60]
-p3 <- ggplot(x,aes(x=item,y=mean,ymin=mean-sd,ymax=mean+sd,col=method,group=method)) + geom_pointrange() + scale_x_log10("Sample size (log scale)",breaks=c(1000, 2000, 4000, 8000, 16000, 32000, 64000)) + scale_y_log10("Time (minutes, log scale)")
+p3 <- ggplot(x,aes(x=item,y=mean,ymin=mean-sd,ymax=mean+sd,pch=method,col=method,group=method,linetype=method)) + geom_pointrange() + scale_x_log10("Sample size (log scale)",breaks=c(1000, 2000, 4000, 8000, 16000, 32000, 64000)) + scale_y_log10("Time (minutes, log scale)")
 
 cols <- rgb(red=c(0,0,182,146,146,219)/256, green=c(146,109,109,0,73,209)/256, blue=c(146,219,255,0,0,0)/256)
+cols[2] <- "black"
+cols[5] <- "gray40"
 nicer <- function(p) {
-    nicecow(p) + geom_smooth(method="lm",linetype="dashed",se=FALSE) + theme(legend.position="none") +
-      scale_colour_manual(values=c("HAPGEN+SNPTEST"=cols[2],"simGWAS"=cols[5]))
+    nicecow(p) + geom_smooth(method="lm",se=FALSE,linetype="dotted") +
+      theme(legend.position="none") +
+      scale_colour_manual(values=c("HAPGEN+SNPTEST"=cols[2],"simGWAS"=cols[5])) +
+      scale_linetype_manual(values=c("HAPGEN+SNPTEST"="dashed","simGWAS"="dotted"))
 }
 plot_grid(nicer(p1),
-          nicer(p2) + theme(legend.position=c(0,0.9)),
+          nicer(p2) + theme(legend.position=c(0,0.9),
+                            legend.background = element_rect(linetype = 1, size = 0.5, colour = 1)),
           nicer(p3),
           labels=c("a","b","c"),nrow=3)
 
-ggsave("timings.pdf",height=8,width=8)
+ggsave("timings.pdf",height=9,width=5)
 
 write.table(do.call("rbind",RESULTS),file="timings.tsv",row.names=FALSE,sep="\t",quote=FALSE)
