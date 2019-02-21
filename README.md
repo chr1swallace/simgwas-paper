@@ -3,7 +3,8 @@ calculations run for our simGWAS manuscript
 
 > simGWAS: a fast method for simulation of large scale case-control GWAS summary statistics
 > Mary D Fortune, Chris Wallace
-> bioRxiv 313023; doi: https://doi.org/10.1101/313023
+> Bioinformatics 2018; https://doi.org/10.1093/bioinformatics/bty898
+> preprint at bioRxiv 313023; doi: https://doi.org/10.1101/313023
 
 Note that commands like `q.rb` and `qR.rb` are wrappers to run these commands on out local HPC.  This code is provided so that the details of what was done can be understood, but it is expected that commands to submit jobs to local HPCs would need to be customised.
 
